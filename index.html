@@ -248,15 +248,17 @@ textarea.answer::placeholder{color:var(--muted);font-style:italic}
 
 <script>
 // =================================================================
-// Configuration — PLACEHOLDERS ONLY. Do not paste production values.
-// Dedicated to this questionnaire; never the Leadership Portrait's or
-// the Enterprise CEO Assessment's endpoints. Full setup instructions
-// live in the separate setup/test notes document, not in this file.
+// Production configuration — Sypnios MVV Assessment.
+// Dedicated to this questionnaire only; never the Leadership Portrait's
+// or the Enterprise CEO Assessment's endpoints/tables.
 // =================================================================
-const FORMSPREE_ENDPOINT = 'https://formspree.io/f/REPLACE_WITH_DEDICATED_FORM_ID';
-const SUPABASE_URL = 'https://REPLACE_WITH_PROJECT.supabase.co';
-const SUPABASE_ANON_KEY = 'REPLACE_WITH_PUBLIC_ANON_KEY';
-const ENDPOINTS_CONFIGURED = false; // flip to true only after real values are set and tested
+const FORMSPREE_ENDPOINT = 'https://formspree.io/f/xgavbdqz';
+const SUPABASE_URL = 'https://owhvgxvdcuxrkuuxqjbh.supabase.co';
+// Supabase's current browser-safe key format (not a JWT). Maps to the
+// `anon` role by default, matching the INSERT-only RLS policy already
+// configured on this table. Never a service_role/secret key.
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_c-IEP_LPYYJBfSgibu2Ycw_HZrCw4EU';
+const ENDPOINTS_CONFIGURED = true;
 
 // =================================================================
 // Questions — wording and guidance copied verbatim from
@@ -486,9 +488,13 @@ function buildPayload(){
 async function trySupabase(payload){
   let res;
   try{
-    res = await fetch(`${SUPABASE_URL}/rest/v1/enterprise_perspective_responses`, {
+    res = await fetch(`${SUPABASE_URL}/rest/v1/mission_vision_perspectives`, {
       method:'POST',
-      headers:{ 'apikey':SUPABASE_ANON_KEY, 'Authorization':`Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type':'application/json' },
+      // apikey + Authorization carry the same publishable-key value. This is
+      // the documented pattern for this key format (it is not a JWT, so it
+      // cannot stand alone as a bearer token) and is exactly what the
+      // official supabase-js client sends for unauthenticated requests.
+      headers:{ 'apikey':SUPABASE_PUBLISHABLE_KEY, 'Authorization':`Bearer ${SUPABASE_PUBLISHABLE_KEY}`, 'Content-Type':'application/json' },
       body: JSON.stringify(payload),
     });
   }catch(e){

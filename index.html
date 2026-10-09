@@ -514,6 +514,23 @@ async function trySupabase(payload){
   return 'failed';
 }
 
+// Formspree is meant to work as a human-readable backup, someone opening
+// an email or the dashboard later should be able to read it without the
+// source code open beside them. The structured `answers` object is right
+// for Supabase's jsonb column, but by itself it's just short keys and
+// short values ("behavior: f"), with no question text at all, so pairs
+// each answer with its actual approved question, derived from STEPS
+// itself rather than retyped, so it can never drift out of sync with it.
+function buildReadableTranscript(payload){
+  let lines = [];
+  STEPS.forEach(step => {
+    const answer = step.type === 'check' ? payload.formal_statements_check : payload.answers[step.id];
+    lines.push(`Q: ${step.text}`);
+    lines.push(`A: ${answer && String(answer).trim() ? answer : '(not answered)'}`, '');
+  });
+  return lines.join('\n');
+}
+
 // KNOWN LIMIT: Formspree can receive and accept a submission even when the
 // browser never sees the response (e.g., the connection drops right after
 // the request lands). In that situation this function sees a network
@@ -524,7 +541,7 @@ async function tryFormspree(payload){
   try{
     const res = await fetch(FORMSPREE_ENDPOINT, {
       method:'POST', headers:{ 'Accept':'application/json','Content-Type':'application/json' },
-      body: JSON.stringify({ _subject:`Mission, Vision & Values Assessment: ${payload.company}`, ...payload }),
+      body: JSON.stringify({ _subject:`Mission, Vision & Values Assessment: ${payload.company}`, ...payload, all_questions_and_responses: buildReadableTranscript(payload) }),
     });
     return res.ok;
   }catch(e){ console.error('Formspree submission error:', e); return false; }
